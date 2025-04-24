@@ -12,7 +12,7 @@
         "value": {}
     },
     "enableTelemetry": {
-      "value": true
+      "value": false
     },
     "hubResourceGroupName": {
       "value": ""
@@ -45,7 +45,7 @@
         "value": "azureuser"
     },
     "vmAdminPassword": {
-        "value": "Password123"
+        "value": "GetMeOutOfHere25!"
     },
     "vmLinuxSshAuthorizedKeys": {
         "value":  "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDpNpoh248rsraL3uejAwKlla+pHaDLbp4DM7bKFoc3Rt1DeXPs0XTutJcNtq4iRq+ooRQ1T7WaK42MfQQxt3qkXwjyv8lPJ4v7aElWkAbxZIRYVYmQVxxwfw+zyB1rFdaCQD/kISg/zXxCWw+gdds4rEy7eq23/bXFM0l7pNvbAULIB6ZY7MRpC304lIAJusuZC59iwvjT3dWsDNWifA1SJtgr39yaxB9Fb01UdacwJNuvfGC35GNYH0VJ56c+iCFeAnMXIT00cYuHf0FCRTP0WvTKl+PQmeD1pwxefdFvKCVpidU2hOARb4ooapT0SDM1SODqjaZ/qwWP18y/qQ/v imported-openssh-key"
@@ -54,7 +54,7 @@
         "value": "linux"
     },
     "vmAuthenticationType": {
-      "value":  "sshPublicKey"
+      "value":  "password"
     },
     "vmJumpBoxSubnetAddressPrefix": {
         "value":  "10.1.2.32/27"
@@ -72,13 +72,13 @@
       "value":  "10.1.3.0/24"
     },
     "routeSpokeTrafficInternally": {
-      "value":  false
+      "value":  true
     },
     "enableApplicationInsights": {
       "value": true
     },
     "enableDaprInstrumentation": {
-      "value": true
+      "value": false
     },
     "deployHelloWorldSample": {
       "value": true
@@ -93,7 +93,7 @@
       "value": false
     },
     "ddosProtectionMode": {
-      "value": "Enabled"
+      "value": "Disabled"
     },
     "enableApplicationGatewayCertificate": {
       "value": true
@@ -102,10 +102,13 @@
       "value": "agwcert"
     },
     "deployAzurePolicies": {
-      "value": true
+      "value": false
     },
     "deployZoneRedundantResources": {
       "value": true
+    },
+    "deployAgentPool": {
+      "value": false
     }
   }
 }

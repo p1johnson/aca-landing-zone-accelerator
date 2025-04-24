@@ -142,6 +142,9 @@ param deployAzurePolicies bool = true
 ])
 param ddosProtectionMode string = 'Disabled'
 
+@description('Optional. Deploy the agent pool for the container registry. Default value is true.')
+param deployAgentPool bool = true
+
 // ------------------
 // VARIABLES
 // ------------------
@@ -222,6 +225,7 @@ module supportingServices 'modules/03-supporting-services/deploy.supporting-serv
     deployRedisCache: deployRedisCache
     logAnalyticsWorkspaceId: spoke.outputs.logAnalyticsWorkspaceId
     deployOpenAi: deployOpenAi
+    deployAgentPool: deployAgentPool
   }
 }
 
@@ -252,6 +256,7 @@ module helloWorlSampleApp 'modules/05-hello-world-sample-app/deploy.hello-world.
     tags: tags
     containerRegistryUserAssignedIdentityId: supportingServices.outputs.containerRegistryUserAssignedIdentityId
     containerAppsEnvironmentId: containerAppsEnvironment.outputs.containerAppsEnvironmentId
+    registryLoginServer: supportingServices.outputs.containerRegistryLoginServer
   }
 }
 

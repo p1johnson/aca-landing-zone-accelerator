@@ -21,6 +21,9 @@ param containerRegistryUserAssignedIdentityId string
 @description('The resource ID of the existing Container Apps environment in which the Container App will be deployed.')
 param containerAppsEnvironmentId string
 
+@description('Optional. The address of the registry login server for the container app. If set, it overrides the Microsoft Container Registry.')
+param registryLoginServer string = 'mcr.microsoft.com'
+
 // ------------------
 // RESOURCES
 // ------------------
@@ -45,7 +48,12 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
         targetPort: 80
         transport: 'auto'
       }
-      registries: []
+      registries: [
+        {
+          identity: containerRegistryUserAssignedIdentityId
+          server: registryLoginServer
+        }
+      ]
       secrets: []
     }
     environmentId: containerAppsEnvironmentId
@@ -56,7 +64,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
           name: 'simple-hello'
           // Production readiness change
           // All workloads should be pulled from your private container registry and not public registries.
-          image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+          image: '${registryLoginServer}/azuredocs/containerapps-helloworld:latest'
           resources: {
             cpu: json('0.25')
             memory: '0.5Gi'
