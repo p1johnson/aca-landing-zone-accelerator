@@ -16,7 +16,7 @@ param dedicatedWorkloadProfile bool = false
 param environment string = 'test'
 
 @description('The location where the resources will be created.')
-param location string =  deployment().location
+param location string = deployment().location
 
 @description('Optional. The tags to be assigned to the created resources.')
 param tags object = {}
@@ -145,13 +145,25 @@ param ddosProtectionMode string = 'Disabled'
 @description('Optional. Deploy the agent pool for the container registry. Default value is true.')
 param deployAgentPool bool = true
 
+@description('Optional, default value is false. If true, Azure App Configuration Store (Standard SKU), together with Private Endpoint and the relavant Private DNS Zone will be deployed')
+param deployAppConfigurationStore bool = false
+
+@description('Optional. Key values to create in Azure App Configuration Store')
+param keyValues array?
+
+@description('Optional. Container registry login server hosting app configuration sample app.')
+param aspnetappRegistryLoginServer string = ''
+
 // ------------------
 // VARIABLES
 // ------------------
 var namingRules = json(loadTextContent('../../shared/bicep/naming/naming-rules.jsonc'))
-var rgHubName = !empty(hubResourceGroupName) ? hubResourceGroupName : '${namingRules.resourceTypeAbbreviations.resourceGroup}-${workloadName}-hub-${environment}-${namingRules.regionAbbreviations[toLower(location)]}'
-var rgSpokeName = !empty(spokeResourceGroupName) ? spokeResourceGroupName : '${namingRules.resourceTypeAbbreviations.resourceGroup}-${workloadName}-spoke-${environment}-${namingRules.regionAbbreviations[toLower(location)]}'
-
+var rgHubName = !empty(hubResourceGroupName)
+  ? hubResourceGroupName
+  : '${namingRules.resourceTypeAbbreviations.resourceGroup}-${workloadName}-hub-${environment}-${namingRules.regionAbbreviations[toLower(location)]}'
+var rgSpokeName = !empty(spokeResourceGroupName)
+  ? spokeResourceGroupName
+  : '${namingRules.resourceTypeAbbreviations.resourceGroup}-${workloadName}-spoke-${environment}-${namingRules.regionAbbreviations[toLower(location)]}'
 
 // ------------------
 // RESOURCES
@@ -168,7 +180,7 @@ module hub 'modules/01-hub/deploy.hub.bicep' = if (deployHub) {
     vnetAddressPrefixes: vnetAddressPrefixes
     enableBastion: enableBastion
     bastionSku: bastionSku
-    bastionSubnetAddressPrefix: bastionSubnetAddressPrefix    
+    bastionSubnetAddressPrefix: bastionSubnetAddressPrefix
     azureFirewallSubnetAddressPrefix: azureFirewallSubnetAddressPrefix
     azureFirewallSubnetManagementAddressPrefix: azureFirewallSubnetManagementAddressPrefix
     gatewaySubnetAddressPrefix: gatewaySubnetAddressPrefix
@@ -193,7 +205,7 @@ module spoke 'modules/02-spoke/deploy.spoke.bicep' = {
     hubVNetId: deployHub ? hub.outputs.hubVNetId : ''
     enableBastion: enableBastion
     bastionSku: bastionSku
-    bastionSubnetAddressPrefix: bastionSubnetAddressPrefix  
+    bastionSubnetAddressPrefix: bastionSubnetAddressPrefix
     spokeApplicationGatewaySubnetAddressPrefix: spokeApplicationGatewaySubnetAddressPrefix
     spokeInfraSubnetAddressPrefix: spokeInfraSubnetAddressPrefix
     spokePrivateEndpointsSubnetAddressPrefix: spokePrivateEndpointsSubnetAddressPrefix
@@ -226,6 +238,8 @@ module supportingServices 'modules/03-supporting-services/deploy.supporting-serv
     logAnalyticsWorkspaceId: spoke.outputs.logAnalyticsWorkspaceId
     deployOpenAi: deployOpenAi
     deployAgentPool: deployAgentPool
+    deployAppConfigurationStore: deployAppConfigurationStore
+    keyValues: keyValues
   }
 }
 
@@ -248,7 +262,7 @@ module containerAppsEnvironment 'modules/04-container-apps-environment/deploy.ac
   }
 }
 
-module helloWorlSampleApp 'modules/05-hello-world-sample-app/deploy.hello-world.bicep' = if (deployHelloWorldSample) {
+/* module helloWorlSampleApp 'modules/05-hello-world-sample-app/deploy.hello-world.bicep' = if (deployHelloWorldSample) {
   name: take('helloWorlSampleApp-${deployment().name}-deployment', 64)
   scope: spokeResourceGroup
   params: {
@@ -258,6 +272,25 @@ module helloWorlSampleApp 'modules/05-hello-world-sample-app/deploy.hello-world.
     containerAppsEnvironmentId: containerAppsEnvironment.outputs.containerAppsEnvironmentId
     registryLoginServer: supportingServices.outputs.containerRegistryLoginServer
   }
+} */
+
+module aspnetApp 'modules/05-hello-world-sample-app/deploy.aspnet.bicep' = if (deployHelloWorldSample) {
+  name: take('aspnetApp-${deployment().name}-deployment', 64)
+  scope: spokeResourceGroup
+  params: {
+    location: location
+    tags: tags
+//    containerRegistryUserAssignedIdentityId: supportingServices.outputs.containerRegistryUserAssignedIdentityId
+    containerAppsEnvironmentId: containerAppsEnvironment.outputs.containerAppsEnvironmentId
+//    registryLoginServer: supportingServices.outputs.containerRegistryLoginServer
+    registryLoginServer: aspnetappRegistryLoginServer
+    appConfigurationStoreEndpoint: supportingServices.outputs.appConfigurationStoreEndpoint
+    appConfigurationStoreUserAssignedIdentityId: supportingServices.outputs.appConfigurationStoreUserAssignedIdentityId
+    appConfigurationStoreUserAssignedIdentityClientId: supportingServices.outputs.appConfigurationStoreUserAssignedIdentityClientId
+  }
+  dependsOn: [
+//    helloWorlSampleApp
+  ]
 }
 
 module applicationGateway 'modules/06-application-gateway/deploy.app-gateway.bicep' = if (deployHelloWorldSample) {
@@ -270,7 +303,10 @@ module applicationGateway 'modules/06-application-gateway/deploy.app-gateway.bic
     workloadName: workloadName
     applicationGatewayCertificateKeyName: applicationGatewayCertificateKeyName
     applicationGatewayFqdn: applicationGatewayFqdn
-    applicationGatewayPrimaryBackendEndFqdn: (deployHelloWorldSample) ? helloWorlSampleApp.outputs.helloWorldAppFqdn : '' // To fix issue when hello world is not deployed
+    applicationGatewayPrimaryBackendEndFqdn: (deployHelloWorldSample)
+//      ? helloWorlSampleApp.outputs.helloWorldAppFqdn
+      ? aspnetApp.outputs.aspnetappFqdn
+: '' // To fix issue when hello world is not deployed
     applicationGatewaySubnetId: spoke.outputs.spokeApplicationGatewaySubnetId
     enableApplicationGatewayCertificate: enableApplicationGatewayCertificate
     keyVaultId: supportingServices.outputs.keyVaultId
@@ -283,8 +319,6 @@ module applicationGateway 'modules/06-application-gateway/deploy.app-gateway.bic
 // ------------------
 // OUTPUTS
 // ------------------
-
-
 
 @description('The resource ID of hub virtual network.')
 output hubVNetId string = deployHub ? hub.outputs.hubVNetId : ''
@@ -346,7 +380,22 @@ output keyVaultId string = supportingServices.outputs.keyVaultId
 output keyVaultName string = supportingServices.outputs.keyVaultName
 
 @description('The name of the Azure Open AI account name.')
-output openAIAccountName string = (deployOpenAi)? supportingServices.outputs.openAIAccountName : ''
+output openAIAccountName string = (deployOpenAi) ? supportingServices.outputs.openAIAccountName : ''
+
+@description('The Resource ID of the app configuration store')
+output appConfigurationStoreId string = (deployAppConfigurationStore)
+  ? supportingServices.outputs.appConfigurationStoreId
+  : ''
+
+@description('The Name of the app configuration store')
+output appConfigurationStoreName string = (deployAppConfigurationStore)
+  ? supportingServices.outputs.appConfigurationStoreName
+  : ''
+
+@description('The resource ID of the user assigned managed identity for the app configuration store data reader.')
+output appConfigurationStoreUserAssignedIdentityId string = (deployAppConfigurationStore)
+  ? supportingServices.outputs.appConfigurationStoreUserAssignedIdentityId
+  : ''
 
 // Container Apps Environment
 @description('The resource ID of the container apps environment.')
@@ -356,4 +405,6 @@ output containerAppsEnvironmentId string = containerAppsEnvironment.outputs.cont
 output containerAppsEnvironmentName string = containerAppsEnvironment.outputs.containerAppsEnvironmentName
 
 @description(' The name of application Insights instance.')
-output applicationInsightsName string =  (enableApplicationInsights)? containerAppsEnvironment.outputs.applicationInsightsName : ''
+output applicationInsightsName string = (enableApplicationInsights)
+  ? containerAppsEnvironment.outputs.applicationInsightsName
+  : ''

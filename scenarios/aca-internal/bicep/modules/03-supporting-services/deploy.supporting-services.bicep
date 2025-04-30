@@ -48,6 +48,12 @@ param deployZoneRedundantResources bool = true
 @description('Optional. Deploy the agent pool for the container registry. Default value is true.')
 param deployAgentPool bool = true
 
+@description('Optional. Deploy an Azure App Configuration store. Default value is false.')
+param deployAppConfigurationStore bool = false
+
+@description('Optional. Key values to create in Azure App Configuration Store')
+param keyValues array?
+
 // ------------------
 // RESOURCES
 // ------------------
@@ -136,6 +142,22 @@ module openAi 'modules/open-ai.module.bicep'= if(deployOpenAi) {
   }
 }
 
+module appConfigurationStore 'modules/app-configuration.module.bicep' = if(deployAppConfigurationStore) {
+  name: 'appConfiguration-${uniqueString(resourceGroup().id)}'
+  params: {
+    appConfigurationStoreName: naming.outputs.resourcesNames.appConfigurationStore
+    location: location
+    tags: tags
+    spokeVNetId: spokeVNetId
+    hubVNetName: hubVNetName
+    hubVNetId: hubVNetId
+    spokePrivateEndpointSubnetName: spokePrivateEndpointSubnetName
+    appConfigurationStorePrivateEndpointName: naming.outputs.resourcesNames.appConfigurationStorePep
+    keyValues: keyValues
+    appConfigurationStoreUserAssignedIdentityName: naming.outputs.resourcesNames.appConfigurationStoreUserAssignedIdentity
+  }
+}
+
 // ------------------
 // OUTPUTS
 // ------------------
@@ -166,3 +188,19 @@ output redisCacheSecretKey string = (deployRedisCache)? redisCache.outputs.redis
 
 @description('The name of the Azure Open AI account name.')
 output openAIAccountName string = (deployOpenAi)? openAi.outputs.name : ''
+
+@description('The resource ID of the Azure App Configuration Store.')
+output appConfigurationStoreId string = (deployAppConfigurationStore) ? appConfigurationStore.outputs.appConfigurationStoreId : ''
+
+@description('The name of the Azure App Configuration Store.')
+output appConfigurationStoreName string = (deployAppConfigurationStore) ? appConfigurationStore.outputs.appConfigurationStoreName : ''
+
+@description('The resource ID of the user assigned managed identity for the app configuration store data reader.')
+output appConfigurationStoreUserAssignedIdentityId string = (deployAppConfigurationStore)? appConfigurationStore.outputs.appConfigurationStoreUserAssignedIdentityId : ''
+
+
+@description('The client id of the user assigned managed identity for the app configuration store data reader')
+output appConfigurationStoreUserAssignedIdentityClientId string = (deployAppConfigurationStore)? appConfigurationStore.outputs.appConfigurationStoreUserAssignedIdentityClientId : ''
+
+@description('The DNS endpoint where the configuration store API will be available.')
+output appConfigurationStoreEndpoint string = (deployAppConfigurationStore)?  appConfigurationStore.outputs.appConfigurationStoreEndpoint : ''

@@ -109,6 +109,32 @@
     },
     "deployAgentPool": {
       "value": false
+    },
+    "deployAppConfigurationStore": {
+      "value": true
+    },
+    "keyValues": {
+      "value": [
+        {
+          "name": "TestApp:Settings:BackgroundColor",
+          "value": "white"
+        },
+        {
+          "name": "TestApp:Settings:FontColor",
+          "value": "black"
+        },
+        {
+          "name": "TestApp:Settings:FontSize",
+          "value": "24"
+        },
+        {
+          "name": "TestApp:Settings:Message",
+          "value": "Data from Azure App Configuration"
+        }
+      ]
+    },
+    "aspnetappRegistryLoginServer": {
+      "value": "pjacr20250429.azurecr.io"
     }
   }
 }
