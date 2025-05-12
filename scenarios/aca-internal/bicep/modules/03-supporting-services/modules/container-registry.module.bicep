@@ -37,7 +37,8 @@ param diagnosticWorkspaceId string = ''
 @description('Optional, default value is true. If true, any resources that support AZ will be deployed in all three AZ. However if the selected region is not supporting AZ, this parameter needs to be set to false.')
 param deployZoneRedundantResources bool = true
 
-
+@description('Optional. Deploy the agent pool for the container registry. Default value is true.')
+param deployAgentPool bool = true
 
 // ------------------
 // VARIABLES
@@ -98,6 +99,7 @@ module containerRegistry '../../../../../shared/bicep/container-registry.bicep' 
     networkRuleBypassOptions: 'AzureServices'
     diagnosticWorkspaceId: diagnosticWorkspaceId
     agentPoolSubnetId: spokePrivateEndpointSubnet.id
+    deployAgentPool: deployAgentPool
   }
 }
 

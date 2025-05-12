@@ -1,6 +1,7 @@
 {
     // Recommended abreviations: https://learn.microsoft.com/azure/cloud-adoption-framework/ready/azure-best-practices/resource-abbreviations
     "resourceTypeAbbreviations" : {
+        "appConfigurationStore": "appcs",
         "applicationGateway": "agw",
         "applicationInsights": "appi",
         "appService": "app",
